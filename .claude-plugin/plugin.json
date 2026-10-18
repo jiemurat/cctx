@@ -1,0 +1,19 @@
+{
+  "name": "cctx",
+  "displayName": "Claude context, cache and plan limits status",
+  "version": "1.0.0",
+  "description": "Status line with the session's context size, prompt-cache time left and plan limits; a nudge to start fresh as context passes 250K, 400K, 500K ... 950K tokens.",
+  "author": {
+    "name": "Jiemurat Mambetkarimov"
+  },
+  "license": "MIT",
+  "icon": "./logo.svg",
+  "repository": "https://github.com/jiemurat/cctx",
+  "homepage": "https://github.com/jiemurat/cctx",
+  "keywords": ["claude-code", "status-line", "context", "prompt-cache", "rate-limits"],
+  "documentationUrl": "https://github.com/jiemurat/cctx#readme",
+  "supportUrl": "https://github.com/jiemurat/cctx/issues",
+  "privacyPolicyUrl": "https://github.com/jiemurat/cctx/blob/main/PRIVACY.md",
+  "termsOfServiceUrl": "https://github.com/jiemurat/cctx/blob/main/LICENSE",
+  "types": "./types/index.d.ts"
+}

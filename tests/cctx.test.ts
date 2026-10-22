@@ -47,27 +47,27 @@ test('one nudge per threshold crossed, re-armed when context shrinks', async ($,
   const { status, toasts } = world(on)
   on('clock.now', () => ({ value: Date.parse('2026-10-15T12:00:00Z') }))
 
-  await $.session.measure(measure(240_000))
-  await $.session.measure(measure(260_000))
-  await $.session.measure(measure(300_000))
+  await $.session.measure(measure(290_000))
+  await $.session.measure(measure(310_000))
+  await $.session.measure(measure(350_000))
   expect(toasts).toHaveLength(1)
-  expect(toasts[0]).toContain('250K')
-  expect(status.at(-1)).toBe('300K · 5h 38% · 7d 82%')
+  expect(toasts[0]).toContain('300K')
+  expect(status.at(-1)).toBe('350K · 5h 38% · 7d 82%')
 
   await $.session.measure(measure(150_000))
-  await $.session.measure(measure(255_000))
+  await $.session.measure(measure(305_000))
   expect(toasts).toHaveLength(2)
 })
 
-test('nudges at 250K to 950K; a jump past several says the highest once', async ($, on) => {
+test('nudges at 300K to 950K; a jump past several says the highest once', async ($, on) => {
   const { toasts } = world(on)
   on('clock.now', () => ({ value: 0 }))
 
-  for (const k of [250, 399, 400, 500, 600, 700, 750, 800, 850, 900, 950, 990]) {
+  for (const k of [300, 399, 400, 500, 600, 700, 750, 800, 850, 900, 950, 990]) {
     await $.session.measure(measure(k * 1000))
   }
   expect(toasts.map(t => t.split(' ')[1])).toEqual([
-    '250K', '400K', '500K', '600K', '700K', '750K', '800K', '850K', '900K', '950K',
+    '300K', '400K', '500K', '600K', '700K', '750K', '800K', '850K', '900K', '950K',
   ])
 
   await $.session.measure(measure(100_000))
@@ -154,14 +154,24 @@ test('pace: time until reset, then how long the share left lasts at the pace so 
       { kind: 'seven_day', percentUsed: sevenUsed, resetsAt: at(sevenReset) },
     ],
   })
-  // 5h: 27% in 2.95h, 73% lasts 7.98h, reset in 2.05h -> +5.9h; 7d: 58% in 2.71d, 42% lasts 1.96d, reset in 4.29d -> -2.3d
-  expect(formatStatus(u(27, 2.05, 58, 103), now)).toBe('5h 73% 2.1+5.9h · 7d 42% 4.3-2.3d')
-  // 5h: 61.6% in 2.5h, 38.4% lasts 1.56h, reset in 2.5h -> -0.9h; 7d: 18% in 3.5d, 82% lasts 15.94d, reset in 3.5d -> +12.4d
-  expect(formatStatus(u(61.6, 2.5, 18, 84), now)).toBe('5h 38% 2.5-0.9h · 7d 82% 3.5+12.4d')
-  // pace that ends exactly at the reset -> +0.0
-  expect(formatStatus(u(50, 2.5, 50, 84), now)).toBe('5h 50% 2.5+0.0h · 7d 50% 3.5+0.0d')
-  // nothing used yet -> lasts forever
-  expect(formatStatus(u(0, 4, 0, 160), now)).toBe('5h 100% 4.0+∞h · 7d 100% 6.7+∞d')
+  // 5h: 27% in 2.95h (59%) -> 0.5x, 73% lasts 7.98h, reset in 2.05h -> +5.9h;
+  // 7d: 58% in 2.71d (38.7%) -> 1.5x, 42% lasts 1.96d, reset in 4.29d -> -2.3d
+  expect(formatStatus(u(27, 2.05, 58, 103), now)).toBe('5h 73% 0.5x 2.1+5.9h · 7d 42% 1.5x 4.3-2.3d')
+  // 5h: 61.6% in 2.5h (50%) -> 1.2x, 38.4% lasts 1.56h, reset in 2.5h -> -0.9h;
+  // 7d: 18% in 3.5d (50%) -> 0.4x, 82% lasts 15.94d, reset in 3.5d -> +12.4d, beyond +9.9 so left out
+  expect(formatStatus(u(61.6, 2.5, 18, 84), now)).toBe('5h 38% 1.2x 2.5-0.9h · 7d 82% 0.4x 3.5d')
+  // pace that ends exactly at the reset -> 1.0x, +0.0
+  expect(formatStatus(u(50, 2.5, 50, 84), now)).toBe('5h 50% 1.0x 2.5+0.0h · 7d 50% 1.0x 3.5+0.0d')
+  // nothing used yet -> no rate, lasts forever so no span
+  expect(formatStatus(u(0, 4, 0, 160), now)).toBe('5h 100% 4.0h · 7d 100% 6.7d')
+  // rate kept from 0.1x to 9.9x: 5h 99% in 0.5h (10%) -> 9.9x, 100% -> 10.0x; 7d 5% in 3.5d (50%) -> 0.1x, 2% -> 0.0x
+  expect(formatStatus(u(99, 4.5, 5, 84), now)).toBe('5h 1% 9.9x 4.5-4.5h · 7d 95% 0.1x 3.5d')
+  expect(formatStatus(u(100, 4.5, 2, 84), now)).toBe('5h 0% 4.5-4.5h · 7d 98% 3.5d')
+  // span kept up to ±9.9: 5h 20% in 2.98h, 80% lasts 11.92h, reset in 2.02h -> +9.9h; in 3h -> +10.0h
+  expect(formatStatus(u(20, 2.02, 58, 103), now)).toBe('5h 80% 0.3x 2.0+9.9h · 7d 42% 1.5x 4.3-2.3d')
+  expect(formatStatus(u(20, 2, 58, 103), now)).toBe('5h 80% 0.3x 2.0h · 7d 42% 1.5x 4.3-2.3d')
+  // no time passed in the window yet -> no rate
+  expect(formatStatus(u(30, 5, 30, 168), now)).toBe('5h 70% 5.0-5.0h · 7d 70% 7.0-7.0d')
   // no clock or no reset time -> no difference
   expect(formatStatus(u(61.6, 2.5, 18, 84))).toBe('5h 38% · 7d 82%')
 })

@@ -4,7 +4,7 @@ import type { EngineInterface, Register, SessionMeasureInput, SessionUsage, Time
 import { formatStatus } from './format'
 
 // Context sizes, in tokens, that each get one nudge when crossed.
-const THRESHOLDS = [250, 400, 500, 600, 700, 750, 800, 850, 900, 950].map(k => k * 1000)
+const THRESHOLDS = [300, 400, 500, 600, 700, 750, 800, 850, 900, 950].map(k => k * 1000)
 // The prompt cache lives this long after the last request that read or wrote it (this session's TTL).
 const CACHE_TTL_MS = 3_600_000
 const TICK_MS = 60_000

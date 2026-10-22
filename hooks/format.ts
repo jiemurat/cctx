@@ -12,10 +12,11 @@ const ORANGE = '🟠 '
 const RED = '🔴 '
 
 /**
- * "🟠 412K · 38m · 5h 73% 2.1+5.9h · 7d 42% 4.3-2.3d": the context size and
+ * "🟠 412K · 38m · 5h 73% 0.5x 2.1+5.9h · 7d 42% 1.5x 4.3-2.3d": the context size and
  * estimated time left before the prompt cache expires, when `cacheLeftMs` is given; each window shows what
- * is left of the limit, the time until it resets, then how long the left share lasts at the pace used
- * so far in the window minus that time: plus is time to spare, minus is time short; "+∞" while nothing is used.
+ * is left of the limit, the share used against the share of the window passed, the time until it resets, then how long the left share lasts at the pace used
+ * so far in the window minus that time: plus is time to spare, minus is time short. A rate outside 0.1x-9.9x
+ * or a span beyond ±9.9 (and so while nothing is used) is left out.
  */
 export function formatStatus(
   u: {
@@ -46,7 +47,12 @@ export function formatStatus(
     if (isFiniteNumber(now) && Number.isFinite(resetsAt)) {
       const untilReset = Math.min(window.ms, Math.max(0, resetsAt - now))
       const elapsed = window.ms - untilReset
-      const spare = used === 0 ? '+∞' : formatSpan(((Math.max(0, 100 - used) * elapsed) / used - untilReset) / window.unitMs)
+      // The rate against an even pace that runs out exactly at the reset; left out while nothing is used or no time has passed.
+      if (used > 0 && elapsed > 0) {
+        const rate = Math.round(((used * window.ms) / (elapsed * 100)) * 10) / 10
+        if (rate >= 0.1 && rate <= 9.9) text += ` ${rate.toFixed(1)}x`
+      }
+      const spare = used === 0 ? '' : formatSpan(((Math.max(0, 100 - used) * elapsed) / used - untilReset) / window.unitMs)
       text += ` ${(Math.round((untilReset / window.unitMs) * 10) / 10).toFixed(1)}${spare}${window.unit}`
     }
     parts.push(text)
@@ -58,8 +64,9 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
-/** "+5.9", "-2.3", "+0.0": a signed span in the window's unit, one decimal. */
+/** "+5.9", "-2.3", "+0.0": a signed span in the window's unit, one decimal; "" beyond ±9.9. */
 function formatSpan(value: number): string {
   const rounded = Math.round(value * 10) / 10
+  if (Math.abs(rounded) > 9.9) return ''
   return `${rounded < 0 ? '-' : '+'}${Math.abs(rounded).toFixed(1)}`
 }

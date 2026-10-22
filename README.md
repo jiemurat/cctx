@@ -13,19 +13,20 @@ A Claude Code mod that adds a status line with the session's context size, promp
 Example status line:
 
 ```
-🟠 412K · 38m · 5h 73% 2.1+5.9h · 7d 42% 4.3-2.3d
+🟠 412K · 38m · 5h 73% 0.5x 2.1+5.9h · 7d 42% 1.5x 4.3-2.3d
 ```
 
 - **Context** — tokens in the current context, in K. Orange from 400K to 700K, red above 700K.
 - **Cache** — minutes left before the prompt cache expires. It counts down from the last main-thread request (1 hour TTL). Orange at 10–20 min, red under 10 min.
 - **Plan limits** — for the 5-hour and 7-day windows:
   - percent left,
+  - rate: the share used so far against the share of the window passed. `1.0x` runs out exactly at the reset, below that leaves time to spare, above that runs short. Shown from `0.1x` to `9.9x`; hidden outside that, while nothing is used or while no time has passed in the window.
   - time until the window resets,
-  - pace: how long the remaining share lasts at the rate used so far, minus the time until reset. `+` means time to spare, `-` means you will run short. `+∞` while nothing is used.
+  - pace: how long the remaining share lasts at the rate used so far, minus the time until reset. `+` means time to spare, `-` means you will run short. Shown from `-9.9` to `+9.9`; hidden beyond that and while nothing is used.
 
 ## Context nudges
 
-A toast appears once each time context crosses 250K, 400K, 500K, 600K, 700K, 750K, 800K, 850K, 900K or 950K tokens. If context shrinks (compaction or `/clear`), the nudges re-arm.
+A toast appears once each time context crosses 300K, 400K, 500K, 600K, 700K, 750K, 800K, 850K, 900K or 950K tokens. If context shrinks (compaction or `/clear`), the nudges re-arm.
 
 ## Files
 
